@@ -14,4 +14,21 @@ function isNonNegativeInteger(value) {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0
 }
 
-module.exports = { isUuid, isNonEmptyString, isNonNegativeInteger }
+/** 密碼規則不符時的固定訊息 */
+const PASSWORD_RULE_MESSAGE =
+  '密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字'
+
+/** 密碼規則：同時含英文大寫、小寫、數字，長度 8～16 字 */
+function isValidPassword(value) {
+  if (typeof value !== 'string') return false
+  if (value.length < 8 || value.length > 16) return false
+  return /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value)
+}
+
+module.exports = {
+  isUuid,
+  isNonEmptyString,
+  isNonNegativeInteger,
+  isValidPassword,
+  PASSWORD_RULE_MESSAGE,
+}

@@ -4,6 +4,7 @@ const cors = require('cors')
 const healthcheckRouter = require('./routes/healthcheck')
 const skillRouter = require('./routes/skill')
 const creditPackageRouter = require('./routes/creditPackage')
+const userRouter = require('./routes/user')
 
 const app = express()
 
@@ -16,6 +17,8 @@ app.use('/', healthcheckRouter)
 // 注意：/api/coaches/skill 未來須排在 /api/coaches/:coachId（M4）之前
 app.use('/api/coaches/skill', skillRouter)
 app.use('/api/credit-package', creditPackageRouter)
+// M2：會員系統（註冊、登入、個人資料、修改密碼）
+app.use('/api/users', userRouter)
 
 // 404
 app.use((req, res) => {

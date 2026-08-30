@@ -27,6 +27,19 @@ async function ensureSchema() {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `)
+
+  // M2：會員（role 預設 USER，M3 升級教練時改成 COACH）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name varchar(50) NOT NULL,
+      email varchar(320) NOT NULL UNIQUE,
+      password varchar(72) NOT NULL,
+      role varchar(20) NOT NULL DEFAULT 'USER',
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `)
 }
 
 module.exports = { ensureSchema }
