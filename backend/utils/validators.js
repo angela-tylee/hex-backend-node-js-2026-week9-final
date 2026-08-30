@@ -14,6 +14,11 @@ function isNonNegativeInteger(value) {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0
 }
 
+/** 必須是非空字串且以 https:// 開頭 */
+function isHttpsUrl(value) {
+  return isNonEmptyString(value) && value.trim().startsWith('https://')
+}
+
 /** 密碼規則不符時的固定訊息 */
 const PASSWORD_RULE_MESSAGE =
   '密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字'
@@ -29,6 +34,7 @@ module.exports = {
   isUuid,
   isNonEmptyString,
   isNonNegativeInteger,
+  isHttpsUrl,
   isValidPassword,
   PASSWORD_RULE_MESSAGE,
 }

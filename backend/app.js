@@ -5,6 +5,7 @@ const healthcheckRouter = require('./routes/healthcheck')
 const skillRouter = require('./routes/skill')
 const creditPackageRouter = require('./routes/creditPackage')
 const userRouter = require('./routes/user')
+const adminCoachRouter = require('./routes/adminCoach')
 
 const app = express()
 
@@ -19,6 +20,8 @@ app.use('/api/coaches/skill', skillRouter)
 app.use('/api/credit-package', creditPackageRouter)
 // M2：會員系統（註冊、登入、個人資料、修改密碼）
 app.use('/api/users', userRouter)
+// M3：升級教練 + 教練後台（個人資料、課程管理）
+app.use('/api/admin/coaches', adminCoachRouter)
 
 // 404
 app.use((req, res) => {

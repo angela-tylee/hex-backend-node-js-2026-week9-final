@@ -40,6 +40,45 @@ async function ensureSchema() {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `)
+
+  // M3：教練個人檔案（一位使用者最多一筆）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS coach (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      experience_years integer NOT NULL DEFAULT 0 CHECK (experience_years >= 0),
+      description text NOT NULL DEFAULT '',
+      profile_image_url text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `)
+
+  // M3：教練 ↔ 技能（多對多，PUT 個人資料時整批覆蓋）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS coach_skill (
+      coach_id uuid NOT NULL REFERENCES coach(id) ON DELETE CASCADE,
+      skill_id uuid NOT NULL REFERENCES skill(id) ON DELETE CASCADE,
+      PRIMARY KEY (coach_id, skill_id)
+    );
+  `)
+
+  // M3：課程（user_id 為開課教練的使用者 id）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      skill_id uuid NOT NULL REFERENCES skill(id),
+      name varchar(100) NOT NULL,
+      description text NOT NULL,
+      start_at timestamptz NOT NULL,
+      end_at timestamptz NOT NULL,
+      max_participants integer NOT NULL CHECK (max_participants >= 0),
+      meeting_url text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `)
 }
 
 module.exports = { ensureSchema }

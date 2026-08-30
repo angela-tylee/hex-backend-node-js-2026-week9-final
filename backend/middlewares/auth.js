@@ -43,4 +43,15 @@ async function authenticate(req, res, next) {
   }
 }
 
-module.exports = { authenticate }
+/**
+ * 需接在 authenticate 之後：確認登入者已是教練（role 為 COACH）。
+ * 依 Swagger 規格，未成為教練時回 401「使用者尚未成為教練」（不是 403）。
+ */
+function requireCoach(req, res, next) {
+  if (!req.user || req.user.role !== 'COACH') {
+    return res.status(401).json({ status: 'failed', message: '使用者尚未成為教練' })
+  }
+  next()
+}
+
+module.exports = { authenticate, requireCoach }
