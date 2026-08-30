@@ -370,6 +370,76 @@ router.put('/courses/:courseId', authenticate, async (req, res, next) => {
 })
 
 // ============================================================
+// 月營收統計（M6，挑戰）
+// ============================================================
+
+const MONTH_NAMES = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december',
+]
+
+// GET /api/admin/coaches/revenue?month=<英文小寫月份名>
+// 隱形語意：
+//  ① 一筆報名算進哪個月，看 course_booking.created_at（報名建立時間），不是上課時間
+//  ② 年份固定為伺服器當年；month 收英文小寫月份名（january ~ december）
+//  ③ 單堂均價 = 全部方案 Σprice ÷ Σcredit_amount；revenue = floor(當月未取消報名數 × 均價)
+router.get('/revenue', authenticate, requireCoach, async (req, res, next) => {
+  try {
+    const month = typeof req.query.month === 'string' ? req.query.month.toLowerCase() : ''
+    const monthIndex = MONTH_NAMES.indexOf(month)
+    if (monthIndex === -1) {
+      return res.status(400).json({ status: 'failed', message: FIELD_ERROR })
+    }
+
+    const now = new Date()
+    const rangeStart = new Date(now.getFullYear(), monthIndex, 1, 0, 0, 0, 0)
+    const rangeEnd = new Date(now.getFullYear(), monthIndex + 1, 1, 0, 0, 0, 0)
+
+    // 當月、未取消、且課程屬於本教練的報名
+    const bookingRes = await pool.query(
+      `SELECT
+         COUNT(*) AS booking_count,
+         COUNT(DISTINCT cb.user_id) AS participants
+         FROM course_booking cb
+         JOIN course c ON c.id = cb.course_id
+        WHERE c.user_id = $1
+          AND cb.cancelled_at IS NULL
+          AND cb.created_at >= $2
+          AND cb.created_at < $3`,
+      [req.user.id, rangeStart, rangeEnd]
+    )
+    const bookingCount = Number(bookingRes.rows[0].booking_count)
+    const participants = Number(bookingRes.rows[0].participants)
+
+    // 單堂均價：全部方案一起算
+    const pkgRes = await pool.query(
+      `SELECT COALESCE(SUM(price), 0) AS total_price,
+              COALESCE(SUM(credit_amount), 0) AS total_credits
+         FROM credit_package`
+    )
+    const totalCredits = Number(pkgRes.rows[0].total_credits)
+    const perCreditPrice =
+      totalCredits > 0 ? Number(pkgRes.rows[0].total_price) / totalCredits : 0
+
+    // floor 放在最後一步：先乘再無條件捨去
+    const revenue = Math.floor(bookingCount * perCreditPrice)
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        total: {
+          revenue,
+          participants,
+          course_count: bookingCount,
+        },
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ============================================================
 // 升級教練（public 端點，課程簡化：不需登入）
 // 需排在所有 /courses 路由之後，避免把 "courses" 當成 userId
 // ============================================================
