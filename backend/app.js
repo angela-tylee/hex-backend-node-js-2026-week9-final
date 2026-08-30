@@ -6,6 +6,8 @@ const skillRouter = require('./routes/skill')
 const creditPackageRouter = require('./routes/creditPackage')
 const userRouter = require('./routes/user')
 const adminCoachRouter = require('./routes/adminCoach')
+const coachRouter = require('./routes/coach')
+const courseRouter = require('./routes/course')
 
 const app = express()
 
@@ -22,6 +24,10 @@ app.use('/api/credit-package', creditPackageRouter)
 app.use('/api/users', userRouter)
 // M3：升級教練 + 教練後台（個人資料、課程管理）
 app.use('/api/admin/coaches', adminCoachRouter)
+// M4：公開瀏覽（教練列表／詳情／教練課程、全站進行中課程，皆免登入）
+// 注意：/api/coaches/skill 已在上方先註冊，避免 skill 被當成 coachId
+app.use('/api/coaches', coachRouter)
+app.use('/api/courses', courseRouter)
 
 // 404
 app.use((req, res) => {
