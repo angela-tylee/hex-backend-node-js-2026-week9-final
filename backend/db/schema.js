@@ -79,6 +79,30 @@ async function ensureSchema() {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `)
+
+  // M5：會員購買方案的紀錄（一筆一次購買，堂數與金額於購買當下由方案帶入）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS credit_purchase (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      credit_package_id uuid NOT NULL REFERENCES credit_package(id),
+      purchased_credits integer NOT NULL CHECK (purchased_credits >= 0),
+      price_paid numeric(10, 2) NOT NULL CHECK (price_paid >= 0),
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `)
+
+  // M5：課程報名（軟刪除：取消時只標記 cancelled_at，紀錄保留）
+  // 剩餘堂數沒有欄位，靠「Σ購買堂數 − 未取消報名數」即時計算
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course_booking (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      course_id uuid NOT NULL REFERENCES course(id) ON DELETE CASCADE,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      cancelled_at timestamptz
+    );
+  `)
 }
 
 module.exports = { ensureSchema }

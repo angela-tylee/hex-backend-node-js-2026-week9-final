@@ -164,4 +164,84 @@ router.put('/password', authenticate, async (req, res, next) => {
   }
 })
 
+// GET /api/users/credit-package：本人的購買方案紀錄（M5），data 直接是陣列
+router.get('/credit-package', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT cp.name,
+              pur.purchased_credits,
+              pur.price_paid,
+              pur.created_at AS purchase_at
+         FROM credit_purchase pur
+         JOIN credit_package cp ON cp.id = pur.credit_package_id
+        WHERE pur.user_id = $1
+        ORDER BY pur.created_at DESC`,
+      [req.user.id]
+    )
+
+    res.status(200).json({
+      status: 'success',
+      data: rows.map((row) => ({
+        name: row.name,
+        purchased_credits: Number(row.purchased_credits),
+        price_paid: Number(row.price_paid),
+        purchase_at: row.purchase_at,
+      })),
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /api/users/courses：本人的課表與剩餘堂數（M5）
+router.get('/courses', authenticate, async (req, res, next) => {
+  try {
+    const purchaseRes = await pool.query(
+      'SELECT COALESCE(SUM(purchased_credits), 0) AS total FROM credit_purchase WHERE user_id = $1',
+      [req.user.id]
+    )
+    const usageRes = await pool.query(
+      'SELECT COUNT(*) AS used FROM course_booking WHERE user_id = $1 AND cancelled_at IS NULL',
+      [req.user.id]
+    )
+    const bookingRes = await pool.query(
+      `SELECT b.course_id,
+              c.name,
+              c.start_at,
+              c.end_at,
+              c.meeting_url,
+              u.name AS coach_name,
+              b.cancelled_at
+         FROM course_booking b
+         JOIN course c ON c.id = b.course_id
+         JOIN users u ON u.id = c.user_id
+        WHERE b.user_id = $1
+        ORDER BY c.start_at ASC`,
+      [req.user.id]
+    )
+
+    const creditUsage = Number(usageRes.rows[0].used)
+    const creditRemain = Number(purchaseRes.rows[0].total) - creditUsage
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        credit_remain: creditRemain,
+        credit_usage: creditUsage,
+        course_booking: bookingRes.rows.map((row) => ({
+          course_id: row.course_id,
+          name: row.name,
+          start_at: row.start_at,
+          end_at: row.end_at,
+          meeting_url: row.meeting_url,
+          coach_name: row.coach_name,
+          cancelled_at: row.cancelled_at,
+        })),
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 module.exports = router

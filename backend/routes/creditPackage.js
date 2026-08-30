@@ -1,5 +1,6 @@
 const express = require('express')
 const { pool } = require('../db/pool')
+const { authenticate } = require('../middlewares/auth')
 const { isUuid, isNonEmptyString, isNonNegativeInteger } = require('../utils/validators')
 
 const router = express.Router()
@@ -52,6 +53,37 @@ router.post('/', async (req, res, next) => {
         createdAt: pkg.created_at,
       },
     })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/credit-package/:creditPackageId：登入會員購買指定方案（M5）
+// body 完全留空，堂數與金額由後端依方案帶入
+router.post('/:creditPackageId', authenticate, async (req, res, next) => {
+  try {
+    const { creditPackageId } = req.params
+
+    if (!isUuid(creditPackageId)) {
+      return res.status(400).json({ status: 'failed', message: 'ID錯誤' })
+    }
+
+    const { rows } = await pool.query(
+      'SELECT credit_amount, price FROM credit_package WHERE id = $1',
+      [creditPackageId]
+    )
+    if (rows.length === 0) {
+      return res.status(400).json({ status: 'failed', message: 'ID錯誤' })
+    }
+
+    const pkg = rows[0]
+    await pool.query(
+      `INSERT INTO credit_purchase (user_id, credit_package_id, purchased_credits, price_paid)
+       VALUES ($1, $2, $3, $4)`,
+      [req.user.id, creditPackageId, pkg.credit_amount, pkg.price]
+    )
+
+    res.status(200).json({ status: 'success', data: null })
   } catch (err) {
     next(err)
   }
