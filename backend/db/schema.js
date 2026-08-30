@@ -2,12 +2,30 @@ const { pool } = require('./pool')
 
 /**
  * 啟動時自動建表。
- * M0 階段還沒有任何業務資料表，之後 M1～M6 會在這裡補上對應的 CREATE TABLE。
  * 全部使用 IF NOT EXISTS，重複啟動不會出錯。
+ * M1～M6 會在這裡逐步補上對應的資料表。
  */
 async function ensureSchema() {
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+
+  // M1：教練技能
   await pool.query(`
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE TABLE IF NOT EXISTS skill (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name varchar(50) NOT NULL UNIQUE,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+  `)
+
+  // M1：購買方案（堂數包）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS credit_package (
+      id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name varchar(50) NOT NULL UNIQUE,
+      credit_amount integer NOT NULL CHECK (credit_amount >= 0),
+      price numeric(10, 2) NOT NULL CHECK (price >= 0),
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
   `)
 }
 

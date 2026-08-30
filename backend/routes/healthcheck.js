@@ -7,9 +7,9 @@ const router = express.Router()
 router.get('/healthcheck', async (req, res) => {
   try {
     await pool.query('SELECT 1')
-    res.status(200).json({ status: 'success', message: 'ok' })
+    res.status(200).type('text/plain').send('OK')
   } catch (err) {
-    res.status(503).json({ status: 'failed', message: '資料庫尚未就緒' })
+    res.status(503).type('text/plain').send('database not ready')
   }
 })
 

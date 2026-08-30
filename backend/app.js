@@ -2,6 +2,8 @@ const express = require('express')
 const cors = require('cors')
 
 const healthcheckRouter = require('./routes/healthcheck')
+const skillRouter = require('./routes/skill')
+const creditPackageRouter = require('./routes/creditPackage')
 
 const app = express()
 
@@ -10,6 +12,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
 app.use('/', healthcheckRouter)
+// M1：種資料（技能與方案，皆為 public 管理端點）
+// 注意：/api/coaches/skill 未來須排在 /api/coaches/:coachId（M4）之前
+app.use('/api/coaches/skill', skillRouter)
+app.use('/api/credit-package', creditPackageRouter)
 
 // 404
 app.use((req, res) => {
